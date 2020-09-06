@@ -5,12 +5,12 @@ module Hsah
     # Transform a stringified module to an accessible hash key
     def transform_module_casing(module_name, key_casing)
       case key_casing
-      when :lowerCamelCase
-        module_name.to_s.sub(/^./) { |first_char| first_char.downcase }
-      when :UpperCamelCase
-        module_name.to_s
-      when :lower_snake_case
+      when :lower_snake
         module_name.to_s.gsub(/[A-Z]/) { |mtch| "_" + mtch.downcase }.sub(/^_/, "")
+      when :lowerCamel
+        module_name.to_s.sub(/^./) { |first_char| first_char.downcase }
+      when :UpperCamel
+        module_name.to_s
       else
         fail ArgumentError, "invalid casing provided: #{key_casing}"
       end
