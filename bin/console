@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+require "bundler"
+Bundler.require(:default, :development)
+
+
+
+
+
+
+
+
+
+
+
+
+
+Pry.start
