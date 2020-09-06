@@ -58,8 +58,7 @@ module Hsah
         fetch(key, {}).tap do |hash|
           handler.call(hash)
         rescue KeyError
-          # TODO: Ensure any extra hash extensions are ignored here
-          mod = (singleton_class.included_modules - Hash.included_modules).first
+          mod = (singleton_class.included_modules.select { |mod| mod.include? Hsah::Validation }).first
           Errors::InvalidHash.raise!("could not validate: #{mod}", key: key, receiver: self)
         end
       end
