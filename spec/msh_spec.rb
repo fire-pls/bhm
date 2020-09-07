@@ -1,6 +1,6 @@
-RSpec.describe Hsah do
+RSpec.describe Msh do
   it "has a version number" do
-    expect(Hsah::VERSION).not_to be nil
+    expect(Msh::VERSION).not_to be nil
   end
 
   it "does something useful" do

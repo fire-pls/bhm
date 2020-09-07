@@ -1,14 +1,14 @@
 require_relative "errors"
 require_relative "utils"
 
-module Hsah
+module Msh
   # The meat of the library
   module Validation
     module Default
       # NOTE: This module must be included AFTER HashValidation to ensure default validators are redefined
 
       ## DEFAULT VALIDATOR ##
-      # Once the hash has been extended with Hsah::Validation, take the singleton_class ("1-off" modified class of our hash instance)
+      # Once the hash has been extended with Validation, take the singleton_class ("1-off" modified class of our hash instance)
       # Then, find any user-defined modules which may have been nested in the class.
       # Assume these module names map to a key in the hash -- conforming to the value set in `#key_casing`
       #
@@ -19,10 +19,10 @@ module Hsah
           mod = singleton_class.const_get(sym)
 
           # Skip it if it does not include `Validation`, or respond to include?
-          next unless mod.respond_to?(:include?) && mod.include?(Hsah::Validation)
+          next unless mod.respond_to?(:include?) && mod.include?(Validation)
 
           # If the hash has not set any key_casing, assume :lower_snake
-          key = Hsah::Utils.transform_module_casing(sym, key_casing || :lower_snake)
+          key = Msh::Utils.transform_module_casing(sym, key_casing || :lower_snake)
 
           # Instantiate the handler for validating. This block makes 2 assumptions:
           # 1. The retrieved constant is a `module`
@@ -107,7 +107,7 @@ module Hsah
         result = handler.call(hash)
         Errors::InvalidValue.raise!("could not validate value for key: #{key}", key: key, receiver: self) unless result
       rescue KeyError
-        mod = (singleton_class.included_modules.select { |mod| mod.include? Hsah::Validation }).first
+        mod = (singleton_class.included_modules.select { |mod| mod.include? Validation }).first
         Errors::InvalidHash.raise!("could not validate: #{mod}", key: key, receiver: self)
       end
     end

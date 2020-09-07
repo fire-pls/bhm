@@ -1,4 +1,4 @@
-module Hsah
+module Msh
   module Errors
     # Generic error -- the hash could not be fully validated
     class InvalidHash < KeyError

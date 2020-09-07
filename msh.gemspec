@@ -1,9 +1,9 @@
-require_relative "lib/hsah/version"
+require_relative "lib/msh/version"
 require "date"
 
 Gem::Specification.new do |gemspec|
-  gemspec.name = "hsah"
-  gemspec.version = Hsah::VERSION
+  gemspec.name = "msh"
+  gemspec.version = Msh::VERSION
   gemspec.required_ruby_version = ">= #{IO.read("./.ruby-version").strip}"
   gemspec.required_rubygems_version = Gem::Requirement.new(">= 2.7.4")
 
@@ -13,7 +13,7 @@ Gem::Specification.new do |gemspec|
 
   gemspec.summary = "Modular hash validation"
 
-  gemspec.homepage = "https://github.com/fire-pls/hsah"
+  gemspec.homepage = "https://github.com/fire-pls/msh"
   gemspec.license = "MIT"
 
   # Files to include when publishing gem
