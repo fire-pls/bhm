@@ -99,7 +99,7 @@ module Msh
       guard!
 
       # Run validation
-      _runner
+      run_validations!
 
       # If we reach this line, the schema is valid.
       self
@@ -121,7 +121,7 @@ module Msh
 
     private
 
-    def _runner
+    def run_validations!
       validators.each do |key, handler|
         hash = fetch(key)
 
