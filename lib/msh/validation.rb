@@ -65,7 +65,11 @@ module Msh
 
       # Define getters for each of these methods
       %i[validators assert_case assert_keys].each do |method_name|
-        define_method(method_name) { receiver.instance_variable_get("@___#{method_name}") }
+        define_method(method_name) do
+          singleton_class.included_modules.find { |mod|
+            mod.include? Validation
+          }.instance_variable_get("@___#{method_name}")
+        end
       end
     end
 
@@ -85,12 +89,6 @@ module Msh
 
     # Standalone checks for validity
     def guard!
-    end
-
-    # Hash of keys to validate, with the value being something which responds to `call`.
-    # The `call`-able object does not need to return anything, it just needs to raise a KeyError on failure
-    def validator
-      {}
     end
 
     def validate!
