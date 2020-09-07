@@ -5,16 +5,56 @@ module Msh
   # The meat of the library
   module Validation
     def self.included(receiver)
-      # Define a setter on the module including Msh::Validation
-      # Allows for this in the body definition:
-      # validator "key", ->(v){ v == "valid" }
-      receiver.singleton_class.define_method(:validator) do |key, handler|
-        @_validators ||= {}
-        @_validators[key] = handler
+      # Minimal config for key case validation + hash key types.
+      # Supplying no config will not validate hash keys!
+      # Ie, the vaildators must map 1:1 with the hash key value:
+      #
+      #   validator :foo, ->(v){}
+      #
+      # Will look for :foo (symbol). Whereas:
+      #
+      #   config { keys: :strings }
+      #   validator :foo, ->(v){}
+      #
+      # Will look for a key "foo" (string)
+      receiver.singleton_class.define_method(:config) do |**cfg|
+        @___assert_case, @___assert_keys = cfg.values_at(:casing, :keys)
+
+        case_options = [:lower_snake, :lowerCamel, :UpperCamel, :SCREAMING_SNAKE, nil]
+        fail ArgumentError, "casing must be one of #{case_options.inspect}" unless case_options.include? @___assert_case
+
+        key_options = [:symbols, :strings, nil]
+        fail ArgumentError, "keys must be one of #{key_options.inspect}" unless key_options.include? @___assert_keys
       end
 
-      # Define a setter on the module
-      receiver.singleton_class.define_method(:keys) { |casing| @_asserted_case = casing }
+      # Define a setter on the module including Msh::Validation
+      # Allows for this:
+      # module Apex
+      #   include Msh::Validation
+      #     validator "key", ->(v){ v == "valid" }
+      #     validator "foo", ->(v){ v == "bar" }
+      #
+      # Basically, a more legibile way for us to write this:
+      # module Apex
+      #   include Msh::Validation
+      #   @___validators = {
+      #     "key" => ->(val) { val == "valid" },
+      #     "foo" => ->(val) { val == "bar" },
+      #   }
+      #
+      # Lastly; Why prefix with 3 underscores? Surely 1 or 2 is sufficient?
+      # 1 (buzz)word: GraphQL. Aside from that, it's just an extra "assurance" there are no conflicting values
+      receiver.singleton_class.define_method(:validator) do |key, handler|
+        @___validators ||= {}
+        formatted_key = case @___assert_keys
+        when :symbols then key.to_sym
+        when :strings then key.to_s
+        else
+          key
+        end
+
+        @___validators[formatted_key] = handler
+      end
 
       # [asserted_case] The casing this hash should adhere to. Keep nil to ignore
       # must be one of the following:
@@ -24,24 +64,22 @@ module Msh
       # [validators] Hash of key => handlers for validating a hash
 
       # Define getters for each of these methods
-      %i[validators asserted_case].each do |method_name|
-        define_method(method_name) { receiver.instance_variable_get("@_#{method_name}".to_sym) }
+      %i[validators assert_case assert_keys].each do |method_name|
+        define_method(method_name) { receiver.instance_variable_get("@___#{method_name}") }
       end
     end
 
     # TODO: Assert the keys hash conform to a casing stantard
     def assert_case!
-      case asserted_case
-      when nil
-        # Ignore casing
+      case assert_case
+      when :lower_snake
+        # TODO
       when :lowerCamel
         # TODO
       when :UpperCamel
         # TODO
-      when :lower_snake
+      when :SCREAMING_SNAKE
         # TODO
-      else
-        fail ArgumentError, "unsupported casing: #{asserted_case}"
       end
     end
 

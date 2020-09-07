@@ -11,12 +11,14 @@ module Msh
         module_name.to_s.sub(/^./) { |first_char| first_char.downcase }
       when :UpperCamel
         module_name.to_s
+      when :SCREAMING_SNAKE
+        module_name.to_s.gsub(/[A-Z]/) { |mtch| "_" + mtch }.upcase.sub(/^_/, "")
       else
         fail ArgumentError, "invalid casing provided: #{key_casing}"
       end
     end
 
-    # Take a hash which includes HashValidation & traverse upward nested module which also includes Validation
+    # Take a hash which includes Msh::Validation & traverse upward nested module which also includes Validation
     def traverse_ancestors(hash)
       all = hash.singleton_class.included_modules.select { |mod| mod.include? Msh::Validation }
       current = all.first
@@ -31,7 +33,7 @@ module Msh
 
         # HACK: make an instance which extends the current module to use its #asserted_case
         transformed_key = -> do
-          transform_module_casing(accessed_key, {}.extend(current).asserted_case)
+          transform_module_casing(accessed_key, {}.extend(current).assert_case)
         end.call
 
         traversed_ancestors << transformed_key
