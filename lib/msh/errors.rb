@@ -1,5 +1,14 @@
 module Msh
   module Errors
+    # The hash
+    class WontValidate < ArgumentError
+      attr_reader :receiver
+      def initialize(message = "A guard raised; Will not attempt validation for this hash", receiver: nil)
+        @receiver = receiver
+        super(message)
+      end
+    end
+
     # Generic error -- the hash could not be fully validated
     class InvalidHash < KeyError
       def self.raise!(message = nil, key:, receiver:)

@@ -45,7 +45,6 @@ module Msh
       # Lastly; Why prefix with 3 underscores? Surely 1 or 2 is sufficient?
       # 1 (buzz)word: GraphQL. Aside from that, it's just an extra "assurance" there are no conflicting values
       def validator(key, handler)
-        @___validators ||= {}
         formatted_key = case @___assert_keys
         when :symbols then key.to_sym
         when :strings then key.to_s
@@ -53,18 +52,38 @@ module Msh
           key
         end
 
-        @___validators[formatted_key] = handler
+        validators[formatted_key] = handler
+      end
+
+      def guard(handler)
+        guards << handler
+      end
+
+      def guards
+        @__guards ||= []
+      end
+
+      def validators
+        @___validators ||= {}
+      end
+
+      def assert_case
+        @___assert_case
+      end
+
+      def assert_keys
+        @___assert_keys
       end
     end
 
     def self.included(receiver)
       receiver.extend Initializer
       # Define getters for each of these methods
-      %i[validators assert_case assert_keys].each do |method_name|
+      %i[validators guards assert_case assert_keys].each do |method_name|
         define_method(method_name) do
           singleton_class.included_modules.find { |mod|
             mod.include? Validation
-          }.instance_variable_get("@___#{method_name}")
+          }.public_send(method_name)
         end
       end
     end
@@ -83,16 +102,13 @@ module Msh
       end
     end
 
-    def run_guards!
-    end
-
     def validate!
       assert_case!
 
       run_guards!
 
       # Run validation
-      run_validations!
+      run_validators!
 
       # If we reach this line, the schema is valid.
       self
@@ -107,19 +123,31 @@ module Msh
       return true if validate!
 
       # Only rescue lib-defined classes here. Let all other errors surface
-    rescue Errors::InvalidHash => e
-      @errors = e.error_chain
+    rescue Errors::InvalidHash, Errors::WontValidate => e
+      @errors = e.error_chain if e.respond_to? :error_chain
+      # TODO: Add error extensions
       false
     end
 
     private
 
-    def run_validations!
+    def run_validators!
       validators.each do |key, handler|
         hash = fetch(key)
 
         result = handler.call(hash)
         Errors::InvalidValue.raise!("could not validate value for key: #{key}", key: key, receiver: self) unless result
+      rescue KeyError
+        mod = (singleton_class.included_modules.select { |mod| mod.include? Validation }).first
+        Errors::InvalidHash.raise!("could not validate: #{mod}", key: key, receiver: self)
+      end
+    end
+
+    def run_guards!
+      guards.each do |handler|
+        result = handler.call(self)
+
+        fail Errors::WontValidate.new(nil, receiver: self) unless result
       rescue KeyError
         mod = (singleton_class.included_modules.select { |mod| mod.include? Validation }).first
         Errors::InvalidHash.raise!("could not validate: #{mod}", key: key, receiver: self)
