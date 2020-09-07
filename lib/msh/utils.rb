@@ -1,4 +1,4 @@
-module Hsah
+module Msh
   module Utils
     module_function
 
@@ -18,11 +18,11 @@ module Hsah
 
     # Take a hash which includes HashValidation & traverse upward nested module which also includes Validation
     def traverse_ancestors(hash)
-      all = hash.singleton_class.included_modules.select { |mod| mod.include? Hsah::Validation }
+      all = hash.singleton_class.included_modules.select { |mod| mod.include? Msh::Validation }
       current = all.first
       traversed_ancestors = []
 
-      while current.include?(Hsah::Validation)
+      while current.include?(Msh::Validation)
         as_ary = current.to_s.split("::")
         # Truncating the final ::(string), then rejoin
 
