@@ -102,12 +102,13 @@ module Hsah
 
     def _runner
       validator.each do |key, handler|
-        fetch(key, {}).tap do |hash|
-          handler.call(hash)
-        rescue KeyError
-          mod = (singleton_class.included_modules.select { |mod| mod.include? Hsah::Validation }).first
-          Errors::InvalidHash.raise!("could not validate: #{mod}", key: key, receiver: self)
-        end
+        hash = fetch(key)
+
+        result = handler.call(hash)
+        Errors::InvalidValue.raise!("could not validate value for key: #{key}", key: key, receiver: self) unless result
+      rescue KeyError
+        mod = (singleton_class.included_modules.select { |mod| mod.include? Hsah::Validation }).first
+        Errors::InvalidHash.raise!("could not validate: #{mod}", key: key, receiver: self)
       end
     end
   end
