@@ -4,7 +4,7 @@ require_relative "utils"
 module Msh
   # The meat of the library
   module Validation
-    def self.included(receiver)
+    module Initializer
       # Minimal config for key case validation + hash key types.
       # Supplying no config will not validate hash keys!
       # Ie, the vaildators must map 1:1 with the hash key value:
@@ -17,7 +17,7 @@ module Msh
       #   validator :foo, ->(v){}
       #
       # Will look for a key "foo" (string)
-      receiver.singleton_class.define_method(:config) do |**cfg|
+      def config(**cfg)
         @___assert_case, @___assert_keys = cfg.values_at(:casing, :keys)
 
         case_options = [:lower_snake, :lowerCamel, :UpperCamel, :SCREAMING_SNAKE, nil]
@@ -44,7 +44,7 @@ module Msh
       #
       # Lastly; Why prefix with 3 underscores? Surely 1 or 2 is sufficient?
       # 1 (buzz)word: GraphQL. Aside from that, it's just an extra "assurance" there are no conflicting values
-      receiver.singleton_class.define_method(:validator) do |key, handler|
+      def validator(key, handler)
         @___validators ||= {}
         formatted_key = case @___assert_keys
         when :symbols then key.to_sym
@@ -55,14 +55,10 @@ module Msh
 
         @___validators[formatted_key] = handler
       end
+    end
 
-      # [asserted_case] The casing this hash should adhere to. Keep nil to ignore
-      # must be one of the following:
-      # - :lower_snake
-      # - :lowerCamel
-      # - :UpperCamel
-      # [validators] Hash of key => handlers for validating a hash
-
+    def self.included(receiver)
+      receiver.extend Initializer
       # Define getters for each of these methods
       %i[validators assert_case assert_keys].each do |method_name|
         define_method(method_name) do
@@ -87,14 +83,13 @@ module Msh
       end
     end
 
-    # Standalone checks for validity
-    def guard!
+    def run_guards!
     end
 
     def validate!
       assert_case!
 
-      guard!
+      run_guards!
 
       # Run validation
       run_validations!
