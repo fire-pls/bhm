@@ -29,9 +29,9 @@ module Msh
         # Now that we have the module in question, transform the case using the module's method, if it has it defined
         accessed_key = as_ary[-1]
 
-        # HACK: make an instance which extends the current module to use its :key_casing
+        # HACK: make an instance which extends the current module to use its #asserted_case
         transformed_key = -> do
-          transform_module_casing(accessed_key, {}.extend(current).key_casing)
+          transform_module_casing(accessed_key, {}.extend(current).asserted_case)
         end.call
 
         traversed_ancestors << transformed_key

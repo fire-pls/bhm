@@ -4,51 +4,34 @@ require_relative "utils"
 module Msh
   # The meat of the library
   module Validation
-    module Default
-      # NOTE: This module must be included AFTER HashValidation to ensure default validators are redefined
-
-      ## DEFAULT VALIDATOR ##
-      # Once the hash has been extended with Validation, take the singleton_class ("1-off" modified class of our hash instance)
-      # Then, find any user-defined modules which may have been nested in the class.
-      # Assume these module names map to a key in the hash -- conforming to the value set in `#key_casing`
-      #
-      # Example: module RequestBodies => expects "requestBodies" key to be defined in `self`.
-      def validator
-        format = ->(sym) do
-          # Retrieve the ambiguous constant
-          mod = singleton_class.const_get(sym)
-
-          # Skip it if it does not include `Validation`, or respond to include?
-          next unless mod.respond_to?(:include?) && mod.include?(Validation)
-
-          # If the hash has not set any key_casing, assume :lower_snake
-          key = Msh::Utils.transform_module_casing(sym, key_casing || :lower_snake)
-
-          # Instantiate the handler for validating. This block makes 2 assumptions:
-          # 1. The retrieved constant is a `module`
-          # 2. The retrieved module exposes the `#validate!` instance method, which errs on failure
-          handler_lambda = ->(h) { h.extend(mod).validate! }
-
-          # Output, [key, handler_lambda]
-          [key, handler_lambda]
-        end
-
-        # Drop any `nil` we may have gotten from our `next` call
-        singleton_class.constants.map(&format).compact.to_h
+    def self.included(receiver)
+      # Define a setter on the module including Msh::Validation
+      # Allows for this in the body definition:
+      # validator "key", ->(v){ v == "valid" }
+      receiver.singleton_class.define_method(:validator) do |key, handler|
+        @_validators ||= {}
+        @_validators[key] = handler
       end
-    end
 
-    # The casing this hash should adhere to. Keep nil to
-    # must be one of the following:
-    # - :lower_snake
-    # - :lowerCamel
-    # - :UpperCamel
-    def key_casing
+      # Define a setter on the module
+      receiver.singleton_class.define_method(:keys) { |casing| @_asserted_case = casing }
+
+      # [asserted_case] The casing this hash should adhere to. Keep nil to ignore
+      # must be one of the following:
+      # - :lower_snake
+      # - :lowerCamel
+      # - :UpperCamel
+      # [validators] Hash of key => handlers for validating a hash
+
+      # Define getters for each of these methods
+      %i[validators asserted_case].each do |method_name|
+        define_method(method_name) { receiver.instance_variable_get("@_#{method_name}".to_sym) }
+      end
     end
 
     # TODO: Assert the keys hash conform to a casing stantard
     def assert_case!
-      case key_casing
+      case asserted_case
       when nil
         # Ignore casing
       when :lowerCamel
@@ -58,7 +41,7 @@ module Msh
       when :lower_snake
         # TODO
       else
-        fail ArgumentError, "unsupported casing: #{key_casing}"
+        fail ArgumentError, "unsupported casing: #{asserted_case}"
       end
     end
 
@@ -101,7 +84,7 @@ module Msh
     private
 
     def _runner
-      validator.each do |key, handler|
+      validators.each do |key, handler|
         hash = fetch(key)
 
         result = handler.call(hash)
