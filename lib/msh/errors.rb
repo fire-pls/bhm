@@ -1,21 +1,6 @@
 module Msh
   module Errors
-    # The hash
-    class WontValidate < ArgumentError
-      attr_reader :receiver
-      def initialize(message = "A guard raised; Will not attempt validation for this hash", receiver: nil)
-        @receiver = receiver
-        super(message)
-      end
-    end
-
-    # Generic error -- the hash could not be fully validated
-    class InvalidHash < KeyError
-      def self.raise!(message = nil, key:, receiver:)
-        message ||= "could not find key: #{key}"
-        fail new(message, key: key, receiver: receiver)
-      end
-
+    module Chainable
       # Retrieve the chain of errors up to the most recent included module
       # Eg.
       # hash.extend(Document)
@@ -32,6 +17,27 @@ module Msh
             parent = parent.cause
           end
         }.call
+      end
+    end
+
+    # Pre-validation check indicates this should not be validated
+    class WontValidate < ArgumentError
+      include Chainable
+      attr_accessor :receiver
+      def self.raise!(message = nil, receiver: nil)
+        message ||= "A guard raised; Will not attempt validation for this hash"
+        err = new(message)
+        err.receiver = receiver
+        fail err
+      end
+    end
+
+    # Generic error -- the hash could not be fully validated
+    class InvalidHash < KeyError
+      include Chainable
+      def self.raise!(message = nil, receiver:, key:)
+        message ||= "could not find key: #{key}"
+        fail new(message, receiver: receiver, key: key)
       end
 
       # From the invalid hash, get a period-joined string of keys leading to the invalid key or value

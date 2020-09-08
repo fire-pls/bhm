@@ -124,8 +124,7 @@ module Msh
 
       # Only rescue lib-defined classes here. Let all other errors surface
     rescue Errors::InvalidHash, Errors::WontValidate => e
-      @errors = e.error_chain if e.respond_to? :error_chain
-      # TODO: Add error extensions
+      @errors = e.error_chain
       false
     end
 
@@ -147,10 +146,7 @@ module Msh
       guards.each do |handler|
         result = handler.call(self)
 
-        fail Errors::WontValidate.new(nil, receiver: self) unless result
-      rescue KeyError
-        mod = (singleton_class.included_modules.select { |mod| mod.include? Validation }).first
-        Errors::InvalidHash.raise!("could not validate: #{mod}", key: key, receiver: self)
+        Errors::WontValidate.raise!(nil, receiver: self) unless result
       end
     end
   end
