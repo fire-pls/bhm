@@ -69,7 +69,7 @@ module Msh
       end
 
       def guards
-        @__guards ||= []
+        @___guards ||= []
       end
 
       def validators
