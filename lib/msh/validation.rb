@@ -83,10 +83,22 @@ module Msh
       def assert_keys
         @___assert_keys
       end
+
+      # Make getters go through config
+      def assert_case=(new_case)
+        config(keys: assert_keys, casing: new_case)
+      end
+
+      def assert_keys=(new_type)
+        config(keys: new_type, casing: assert_case)
+      end
     end
 
     def self.included(receiver)
       receiver.extend Initializer
+
+      # TODO: Global default config here
+
       # Define getters for each of these methods
       %i[validators guards assert_case assert_keys].each do |method_name|
         define_method(method_name) do
@@ -98,7 +110,18 @@ module Msh
     end
 
     # TODO: Assert the keys hash conform to a casing stantard
-    def assert_case!
+    def validate_keys!
+      if assert_keys
+        klass = case assert_keys
+        when :symbols then Symbol
+        when :strings then String
+        end
+
+        keys.each do |string_or_sym|
+          Errors::InvalidKeyType.raise!(receiver: self, key: string_or_sym, type: assert_keys) unless string_or_sym.is_a? klass
+        end
+      end
+
       case assert_case
       when :lower_snake
         # TODO
@@ -112,7 +135,7 @@ module Msh
     end
 
     def validate!
-      assert_case!
+      validate_keys!
 
       run_guards!
 
@@ -144,7 +167,7 @@ module Msh
         hash = fetch(key)
 
         result = handler.call(hash)
-        Errors::InvalidValue.raise!("could not validate value for key: #{key}", key: key, receiver: self) unless result
+        Errors::InvalidValue.raise!(key: key, receiver: self) unless result
       rescue KeyError
         mod = (singleton_class.included_modules.select { |mod| mod.include? Validation }).first
         Errors::InvalidHash.raise!("could not validate: #{mod}", key: key, receiver: self)
@@ -155,7 +178,7 @@ module Msh
       guards.each do |handler|
         result = handler.call(self)
 
-        Errors::WontValidate.raise!(nil, receiver: self) unless result
+        Errors::WontValidate.raise!(receiver: self) unless result
       end
     end
   end
