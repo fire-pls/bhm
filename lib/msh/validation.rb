@@ -27,6 +27,15 @@ module Msh
         fail ArgumentError, "keys must be one of #{key_options.inspect}" unless key_options.include? @___assert_keys
       end
 
+      # Concise API for setting both case assertion & key conformity
+      def keys(arg)
+        key_option = arg.is_a?(String) ? :strings : :symbols
+        config(
+          keys: key_option,
+          casing: arg.to_sym
+        )
+      end
+
       # Define a setter on the module including Msh::Validation
       # Allows for this:
       # module Apex
