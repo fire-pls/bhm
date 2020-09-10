@@ -34,8 +34,7 @@ module Msh
       attr_accessor :receiver
       def initialize(message = nil, receiver:)
         message ||= "A guard raised; Will not attempt validation for this hash"
-        err = new(message)
-        err.receiver = receiver
+        self.receiver = receiver
         super(message)
       end
     end
