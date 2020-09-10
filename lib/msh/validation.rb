@@ -4,7 +4,9 @@ require_relative "utils"
 module Msh
   # The meat of the library
   module Validation
-    module Initializer
+    # NOTE: Methods **MUST** be in the included block -- otherwise we pollute the module constants with
+    # any "extended initializer"
+    def self.included(receiver)
       # Minimal config for key case validation + hash key types.
       # Supplying no config will not validate hash keys!
       # Ie, the vaildators must map 1:1 with the hash key value:
@@ -17,20 +19,22 @@ module Msh
       #   validator :foo, ->(v){}
       #
       # Will look for a key "foo" (string)
-      def config(**cfg)
-        @___assert_case, @___assert_keys = cfg.values_at(:casing, :keys)
+      receiver.singleton_class.define_method(:config) do |**cfg|
+        pending_case, pending_keys = cfg.values_at(:casing, :keys)
+        receiver.instance_variable_set(:@___assert_case, pending_case)
+        receiver.instance_variable_set(:@___assert_keys, pending_keys)
 
         case_options = [:lower_snake, :lowerCamel, :UpperCamel, :SCREAMING_SNAKE, nil]
-        fail ArgumentError, "casing must be one of #{case_options.inspect}" unless case_options.include? @___assert_case
+        fail ArgumentError, "casing must be one of #{case_options.inspect}" unless case_options.include? pending_case
 
         key_options = [:symbols, :strings, nil]
-        fail ArgumentError, "keys must be one of #{key_options.inspect}" unless key_options.include? @___assert_keys
+        fail ArgumentError, "keys must be one of #{key_options.inspect}" unless key_options.include? pending_keys
       end
 
       # Concise API for setting both case assertion & key conformity
-      def keys(arg)
+      receiver.singleton_class.define_method(:keys) do |arg|
         key_option = arg.is_a?(String) ? :strings : :symbols
-        config(
+        receiver.config(
           keys: key_option,
           casing: arg.to_sym
         )
@@ -53,49 +57,49 @@ module Msh
       #
       # Lastly; Why prefix with 3 underscores? Surely 1 or 2 is sufficient?
       # 1 (buzz)word: GraphQL. Aside from that, it's just an extra "assurance" there are no conflicting values
-      def validator(key, handler)
-        formatted_key = case @___assert_keys
+      receiver.singleton_class.define_method(:validator) do |key, handler|
+        formatted_key = case receiver.instance_variable_get(:@___assert_keys)
         when :symbols then key.to_sym
         when :strings then key.to_s
         else
           key
         end
 
-        validators[formatted_key] = handler
+        vlds = receiver.instance_variable_get(:@___validators) || {}
+        vlds[formatted_key] = handler
+        receiver.instance_variable_set(:@___validators, vlds)
       end
 
-      def guard(handler)
-        guards << handler
+      receiver.singleton_class.define_method(:guard) do |handler|
+        grds = receiver.instance_variable_get(:@___guards) || []
+        grds << handler
+        receiver.instance_variable_set(:@___guards, grds)
       end
 
-      def guards
-        @___guards ||= []
+      receiver.singleton_class.define_method(:guards) do
+        receiver.instance_variable_get(:@___guards) || []
       end
 
-      def validators
-        @___validators ||= {}
+      receiver.singleton_class.define_method(:validators) do
+        receiver.instance_variable_get(:@___validators) || {}
       end
 
-      def assert_case
-        @___assert_case
+      receiver.singleton_class.define_method(:assert_case) do
+        receiver.instance_variable_get(:@___assert_case)
       end
 
-      def assert_keys
-        @___assert_keys
+      receiver.singleton_class.define_method(:assert_keys) do
+        receiver.instance_variable_get(:@___assert_keys)
       end
 
       # Make getters go through config
-      def assert_case=(new_case)
-        config(keys: assert_keys, casing: new_case)
+      receiver.singleton_class.define_method(:assert_case=) do |new_case|
+        receiver.config(keys: assert_keys, casing: new_case)
       end
 
-      def assert_keys=(new_type)
-        config(keys: new_type, casing: assert_case)
+      receiver.singleton_class.define_method(:assert_keys=) do |new_type|
+        receiver.config(keys: new_type, casing: assert_case)
       end
-    end
-
-    def self.included(receiver)
-      receiver.extend Initializer
 
       # TODO: Global default config here
 
