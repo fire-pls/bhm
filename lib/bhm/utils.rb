@@ -3,7 +3,8 @@ module Bhm
     module_function
 
     # Transform a stringified module to an accessible hash key
-    def transform_module_casing(module_name, key_casing, key_type = :strings)
+    # Assume we want symbols by default
+    def transform_module_casing(module_name, key_casing, key_type)
       transformed_module = case key_casing
       when :lower_snake
         module_name.to_s.gsub(/[A-Z]/) { |mtch| "_" + mtch.downcase }.sub(/^_/, "")
@@ -17,6 +18,8 @@ module Bhm
         fail ArgumentError, "invalid casing provided: #{key_casing.inspect}"
       end
 
+      # Coerce into symbols if key_type was explicitly passed as `nil`
+      key_type ||= :symbols
       transformed_module = transformed_module.to_sym if key_type == :symbols
       transformed_module
     end
