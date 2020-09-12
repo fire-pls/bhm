@@ -1,7 +1,7 @@
 require_relative "errors"
 require_relative "utils"
 
-module Msh
+module Bhm
   # The meat of the library
   module Validation
     def self.included(receiver)

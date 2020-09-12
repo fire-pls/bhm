@@ -1,5 +1,5 @@
 require "bundler/setup"
-require "msh"
+require "bhm"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

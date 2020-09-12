@@ -1,3 +1,3 @@
-module Msh
+module Bhm
   VERSION = "0.1.0".freeze
 end

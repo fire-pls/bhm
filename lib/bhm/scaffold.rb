@@ -1,7 +1,7 @@
 require_relative "utils"
 require_relative "validation"
 
-module Msh
+module Bhm
   # Quick way to start including hash validation. May be the only module some projects need :)
   module Scaffold
     # Upon being included do the following:
@@ -9,7 +9,7 @@ module Msh
     # (then)
     # - fetch all declared modules
     ## And recursively do the following:
-    ## - extend it with Msh::Validation
+    ## - extend it with Bhm::Validation
     ## - define a new validator, using the module name as a key
     ## (a nested module assumes it's a nested hash)
     #### @mod_name = ->(hash) { hash.extend(ModName).validate! }
@@ -25,7 +25,7 @@ module Msh
         # Then, define the validator for the current class (calls validate! on the hash)
         # default_key_case may return `nil` if no global config is set.
         casing_transform = klass.default_key_case || :lower_snake
-        key = Msh::Utils.transform_module_casing(sym, casing_transform, klass.default_key_type)
+        key = Utils.transform_module_casing(sym, casing_transform, klass.default_key_type)
 
         klass.validator key, ->(hash) { hash.extend(const).validate! }
 
@@ -45,12 +45,3 @@ end
 #       # Defining instance variables is still respected
 #   module Hash2
 #     module NestedHash
-
-# TODO: Consider adding a GLOBAL LIB config for assumed hash casing & key type
-# example:
-#
-# Msh.default_keys = :SCREAMING_SNAKE
-#
-# +or+
-#
-# Msh.default_config = { keys: :symbols, casing: :SCREAMING_SNAKE }
