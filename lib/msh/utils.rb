@@ -3,8 +3,8 @@ module Msh
     module_function
 
     # Transform a stringified module to an accessible hash key
-    def transform_module_casing(module_name, key_casing)
-      case key_casing
+    def transform_module_casing(module_name, key_casing, key_type = :strings)
+      transformed_module = case key_casing
       when :lower_snake
         module_name.to_s.gsub(/[A-Z]/) { |mtch| "_" + mtch.downcase }.sub(/^_/, "")
       when :lowerCamel
@@ -14,8 +14,11 @@ module Msh
       when :SCREAMING_SNAKE
         module_name.to_s.gsub(/[A-Z]/) { |mtch| "_" + mtch }.upcase.sub(/^_/, "")
       else
-        fail ArgumentError, "invalid casing provided: #{key_casing}"
+        fail ArgumentError, "invalid casing provided: #{key_casing.inspect}"
       end
+
+      transformed_module = transformed_module.to_sym if key_type == :symbols
+      transformed_module
     end
 
     # Take a hash which includes Msh::Validation & traverse upward nested module which also includes Validation
@@ -31,9 +34,13 @@ module Msh
         # Now that we have the module in question, transform the case using the module's method, if it has it defined
         accessed_key = as_ary[-1]
 
-        # HACK: make an instance which extends the current module to use its #asserted_case
+        # HACK: make an instance which extends the current module to use its #default_key values
         transformed_key = -> do
-          transform_module_casing(accessed_key, {}.extend(current).assert_case)
+          hack = {}.extend(current)
+          key_casing = hack.default_key_case
+          key_type = hack.default_key_type
+
+          transform_module_casing(accessed_key, key_casing, key_type)
         end.call
 
         traversed_ancestors << transformed_key
