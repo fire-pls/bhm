@@ -1,4 +1,4 @@
-module Msh
+module Bhm
   module Errors
     module Chainable
       # Helper for re-raising easily

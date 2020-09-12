@@ -1,5 +1,0 @@
-require_relative "msh/errors"
-require_relative "msh/utils"
-require_relative "msh/scaffold"
-require_relative "msh/validation"
-require_relative "msh/version"
